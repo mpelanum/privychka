@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0f12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Привычка</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --surface: #ffffff; --surface-2: #ececef; --text: #16161a;
+    --text-dim: #6b6b73; --border: rgba(0,0,0,0.08); --shadow: 0 8px 24px rgba(0,0,0,0.10);
+    --fab: #16161a; --fab-text: #ffffff; --accent: #16161a; --green:#30a46c;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f0f12; --surface: #1b1b20; --surface-2: #26262d; --text: #f3f3f5;
+    --text-dim: #9a9aa3; --border: rgba(255,255,255,0.10); --shadow: 0 8px 24px rgba(0,0,0,0.45);
+    --fab: #ffffff; --fab-text: #16161a; --accent: #ffffff;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; transition: background .25s, color .25s; overflow-x: hidden; }
+  body.has-bg { background-size: cover; background-position: center; background-attachment: fixed; }
+  body.has-bg::before { content: ""; position: fixed; inset: 0; background: var(--bg); opacity: 0.55; pointer-events: none; z-index: 0; }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 8px; }
+  header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+  .theme-btn { width: 42px; height: 42px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .theme-btn:active { background: var(--surface-2); }
+  main { flex: 1; padding: 8px 20px 150px; position: relative; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .hidden { display: none !important; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 18px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .section-title { font-size: 14px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; margin: 6px 2px 12px; }
+
+  .stats { display: flex; gap: 10px; margin-bottom: 16px; }
+  .stat { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px 10px; text-align: center; box-shadow: var(--shadow); }
+  .stat .v { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+  .stat .k { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  .quote { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+  .quote .q-emoji { font-size: 26px; }
+  .quote .q-body { flex: 1; }
+  .quote p { margin: 0; font-size: 15px; line-height: 1.5; font-style: italic; }
+  .quote .q-hint { font-size: 11px; color: var(--text-dim); margin-top: 8px; font-style: normal; }
+
+  .empty-inline { text-align: center; padding: 30px 20px; color: var(--text-dim); }
+  .empty-inline .emoji { font-size: 46px; margin-bottom: 12px; }
+  .empty-inline p { font-size: 16px; line-height: 1.5; margin: 0; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { position: relative; border-radius: 22px; padding: 16px; min-height: 132px; display: flex; flex-direction: column; justify-content: space-between; color: #fff; cursor: pointer; box-shadow: var(--shadow); transition: transform .12s; overflow: hidden; }
+  .card:active { transform: scale(0.97); }
+  .card .name { font-size: 16px; font-weight: 700; line-height: 1.2; word-break: break-word; text-shadow: 0 1px 2px rgba(0,0,0,0.18); }
+  .card .days { font-size: 38px; font-weight: 800; line-height: 1; letter-spacing: -1px; text-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .card .days small { font-size: 13px; font-weight: 600; opacity: .92; display: block; margin-top: 4px; letter-spacing: 0; }
+
+  .progress { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .progress > i { display: block; height: 100%; width: 0%; background: var(--green); border-radius: 999px; transition: width .3s; }
+
+  .kcal-total { text-align: center; padding: 6px 0 12px; }
+  .kcal-total .num { font-size: 50px; font-weight: 800; letter-spacing: -2px; line-height: 1; }
+  .kcal-total .lbl { font-size: 14px; color: var(--text-dim); margin-top: 6px; }
+  .kcal-remain { text-align: center; font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px; }
+  .chip { font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 999px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); cursor: pointer; }
+  .chip:active { opacity: .6; }
+  .meal { display: flex; align-items: center; justify-content: space-between; padding: 13px 2px; border-top: 1px solid var(--border); }
+  .meal .mname { font-size: 16px; font-weight: 600; word-break: break-word; padding-right: 10px; }
+  .meal .right { display: flex; align-items: center; gap: 12px; flex: none; }
+  .meal .mkcal { font-size: 16px; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+  .del-x { width: 30px; height: 30px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); font-size: 16px; cursor: pointer; flex: none; }
+  .del-x:active { opacity: .6; }
+  .meals-empty { text-align: center; color: var(--text-dim); font-size: 14px; padding: 14px 0 4px; }
+
+  .water-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .water-top .wnum { font-size: 18px; font-weight: 800; }
+  .water-top .wnum small { font-weight: 600; color: var(--text-dim); }
+  .cups { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; font-size: 26px; }
+  .cups .cup { opacity: .28; }
+  .cups .cup.full { opacity: 1; }
+  .water-btns { display: flex; gap: 10px; }
+  .water-btns button { flex: 1; padding: 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 18px; font-weight: 700; cursor: pointer; }
+  .water-btns button:active { opacity: .6; }
+
+  /* Profile bg + music */
+  .bg-box { width: 100%; height: 150px; border-radius: 16px; border: 1px dashed var(--border); background: var(--surface-2); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 14px; margin-bottom: 14px; overflow: hidden; }
+  .bg-box.empty::after { content: "Фон не выбран"; }
+  .music-btn { width: 100%; padding: 16px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 16px; font-weight: 700; cursor: pointer; }
+  .music-btn.on { background: var(--accent); color: var(--fab-text); border-color: var(--accent); }
+  .note { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin: 12px 2px 0; }
+
+  .seg { display: flex; gap: 8px; margin-bottom: 16px; }
+  .seg button { flex: 1; padding: 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); font-size: 15px; font-weight: 700; cursor: pointer; }
+  .seg button.on { background: var(--accent); color: var(--fab-text); border-color: var(--accent); }
+  .row3 { display: flex; gap: 12px; }
+  .row3 .field { flex: 1; margin-bottom: 16px; }
+  .num-input { width: 100%; padding: 14px 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 16px; outline: none; text-align: center; }
+  .field label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; }
+  .bmi-result { text-align: center; padding: 4px 0 2px; }
+  .bmi-result .bmi-num { font-size: 42px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+  .bmi-result .bmi-cat { display: inline-block; margin-top: 10px; padding: 6px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; color: #fff; }
+  .norm-line { text-align: center; font-size: 14px; color: var(--text-dim); margin-top: 14px; }
+  .norm-line b { color: var(--text); }
+  .bmi-hint { text-align: center; color: var(--text-dim); font-size: 14px; padding: 8px 4px; }
+
+  .fab { position: fixed; bottom: 92px; right: 24px; width: 60px; height: 60px; border-radius: 20px; border: none; background: var(--fab); color: var(--fab-text); font-size: 32px; cursor: pointer; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; transition: transform .12s; z-index: 30; }
+  .fab:active { transform: scale(0.92); }
+
+  .nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: calc(70px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 40; }
+  .nav button { flex: 1; background: none; border: none; cursor: pointer; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; padding-top: 8px; }
+  .nav button .ic { font-size: 22px; }
+  .nav button.active { color: var(--accent); }
+
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 50; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .sheet { background: var(--surface); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 22px 20px calc(28px + env(safe-area-inset-bottom)); transform: translateY(100%); transition: transform .28s cubic-bezier(0.2,0.8,0.2,1); }
+  .overlay.show .sheet { transform: translateY(0); }
+  .sheet h2 { margin: 0 0 18px; font-size: 20px; font-weight: 800; }
+  .field input[type=text], .field input[type=number] { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 16px; outline: none; }
+  .field { margin-bottom: 20px; }
+  .colors { display: flex; flex-wrap: wrap; gap: 12px; }
+  .swatch { width: 40px; height: 40px; border-radius: 13px; cursor: pointer; border: 3px solid transparent; transition: transform .1s; }
+  .swatch:active { transform: scale(0.9); }
+  .swatch.sel { border-color: var(--text); transform: scale(1.06); }
+  .btn { width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+  .btn-primary { background: var(--fab); color: var(--fab-text); }
+  .btn-ghost { background: transparent; color: var(--text-dim); margin-top: 8px; }
+  .btn-danger { background: #e5484d; color: #fff; }
+  .btn-outline { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .btn:active { opacity: .85; }
+  .btn[disabled] { opacity: .4; cursor: default; }
+
+  .detail-top { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .detail-chip { width: 52px; height: 52px; border-radius: 16px; flex: none; }
+  .detail-top .info h2 { margin: 0; }
+  .detail-top .info span { font-size: 13px; color: var(--text-dim); }
+  .bigcount { text-align: center; padding: 14px 0 18px; }
+  .bigcount .num { font-size: 60px; font-weight: 800; letter-spacing: -2px; }
+  .bigcount .lbl { font-size: 15px; color: var(--text-dim); }
+  .sub { display: flex; justify-content: space-around; margin-bottom: 18px; }
+  .sub div { text-align: center; }
+  .sub .v { font-size: 22px; font-weight: 700; }
+  .sub .k { font-size: 12px; color: var(--text-dim); }
+  .next-line { font-size: 13px; color: var(--text-dim); margin: 0 0 8px; }
+  .det-section { font-size: 13px; color: var(--text-dim); font-weight: 600; margin: 18px 0 10px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .badge { font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .badge.locked { opacity: .38; }
+
+  .cel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .2s; padding: 24px; }
+  .cel-overlay.show { opacity: 1; pointer-events: auto; }
+  .cel-card { background: var(--surface); border-radius: 28px; padding: 32px 24px 22px; max-width: 360px; width: 100%; text-align: center; box-shadow: var(--shadow); transform: scale(0.9); transition: transform .28s cubic-bezier(0.2,0.8,0.2,1); }
+  .cel-overlay.show .cel-card { transform: scale(1); }
+  .cel-emoji { font-size: 64px; line-height: 1; margin-bottom: 14px; }
+  .cel-card h2 { margin: 0 0 8px; font-size: 24px; font-weight: 800; }
+  .cel-card p { margin: 0 0 20px; font-size: 16px; color: var(--text-dim); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 id="title">Привычки</h1>
+    <button class="theme-btn" id="themeBtn" aria-label="Тема">🌙</button>
+  </header>
+  <main>
+    <!-- HABITS -->
+    <div class="screen active" id="screenHabits">
+      <div class="stats" id="stats">
+        <div class="stat"><div class="v" id="stStreak">0</div><div class="k">дней серия</div></div>
+        <div class="stat"><div class="v" id="stActive">0</div><div class="k">активных</div></div>
+        <div class="stat"><div class="v" id="stTotal">0</div><div class="k">дней всего</div></div>
+      </div>
+      <div class="panel quote" id="quoteCard"><div class="q-emoji">💫</div><div class="q-body"><p id="quote"></p><div class="q-hint">нажми, чтобы сменить</div></div></div>
+      <div class="grid" id="grid"></div>
+      <div class="empty-inline hidden" id="empty">
+        <div class="emoji">🌱</div>
+        <p>Нажми <b>+</b>, чтобы добавить первую привычку,<br>от которой хочешь избавиться</p>
+      </div>
+    </div>
+
+    <!-- NUTRITION -->
+    <div class="screen" id="screenNutrition">
+      <div class="section-title">Калории сегодня</div>
+      <div class="panel">
+        <div class="kcal-total">
+          <div class="num" id="kcalTotal">0</div>
+          <div class="lbl" id="kcalGoal">ккал за сегодня</div>
+        </div>
+        <div class="progress" id="kcalBarWrap" style="display:none"><i id="kcalBar"></i></div>
+        <div class="kcal-remain" id="kcalRemain" style="display:none"></div>
+        <div class="chips" id="chips"></div>
+        <div id="meals"></div>
+        <div class="meals-empty" id="mealsEmpty">Нажми «+» или выбери быстрое блюдо выше</div>
+      </div>
+      <div class="section-title">Вода</div>
+      <div class="panel">
+        <div class="water-top"><div>💧 Стаканы воды</div><div class="wnum"><span id="waterCount">0</span> <small>/ 8</small></div></div>
+        <div class="cups" id="cups"></div>
+        <div class="water-btns"><button id="waterMinus">−</button><button id="waterPlus">+ стакан</button></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="screen" id="screenProfile">
+      <div class="section-title">Фон приложения</div>
+      <div class="panel">
+        <div class="bg-box empty" id="bgPreview"></div>
+        <input type="file" id="bgInput" accept="image/*" style="display:none">
+        <button class="btn btn-outline" id="bgChoose">🖼️ Выбрать изображение</button>
+        <button class="btn btn-ghost" id="bgRemove" style="display:none">Убрать фон</button>
+        <div class="note">Изображение хранится только на твоём устройстве и автоматически сжимается.</div>
+      </div>
+
+      <div class="section-title">Спокойный фон (звук)</div>
+      <div class="panel">
+        <button class="music-btn" id="musicBtn">🎵 Включить спокойный фон</button>
+        <div class="note">Мягкий эмбиент синтезируется самим приложением — без скачивания файлов и без авторских прав. Помогает расслабиться при тяге.</div>
+      </div>
+
+      <div class="section-title">Профиль и ИМТ</div>
+      <div class="panel">
+        <div class="seg">
+          <button id="sexM" class="on">Мужской</button>
+          <button id="sexF">Женский</button>
+        </div>
+        <div class="row3">
+          <div class="field"><label>Возраст</label><input type="number" class="num-input" id="pAge" inputmode="numeric" placeholder="25"></div>
+          <div class="field"><label>Рост, см</label><input type="number" class="num-input" id="pHeight" inputmode="numeric" placeholder="175"></div>
+          <div class="field"><label>Вес, кг</label><input type="number" class="num-input" id="pWeight" inputmode="decimal" placeholder="70"></div>
+        </div>
+        <div class="bmi-result" id="bmiResult" style="display:none">
+          <div class="bmi-num" id="bmiNum">0</div>
+          <div><span class="bmi-cat" id="bmiCat"></span></div>
+          <div class="norm-line" id="normLine"></div>
+        </div>
+        <div class="bmi-hint" id="bmiHint">Заполни профиль — посчитаю ИМТ и дневную норму калорий</div>
+      </div>
+    </div>
+  </main>
+
+  <button class="fab" id="fab">+</button>
+  <nav class="nav">
+    <button id="tabHabits" class="active"><span class="ic">🌱</span>Привычки</button>
+    <button id="tabNutrition"><span class="ic">🍎</span>Питание</button>
+    <button id="tabProfile"><span class="ic">👤</span>Профиль</button>
+  </nav>
+</div>
+
+<!-- Add habit -->
+<div class="overlay" id="addOverlay"><div class="sheet">
+  <h2>Новая привычка</h2>
+  <div class="field"><label>Название</label><input type="text" id="habitName" placeholder="Например: курение, алкоголь..." autocomplete="off" maxlength="30"></div>
+  <div class="field"><label>Цвет</label><div class="colors" id="colors"></div></div>
+  <button class="btn btn-primary" id="saveBtn" disabled>Добавить</button>
+  <button class="btn btn-ghost" id="cancelBtn">Отмена</button>
+</div></div>
+
+<!-- Add meal -->
+<div class="overlay" id="mealOverlay"><div class="sheet">
+  <h2>Добавить блюдо</h2>
+  <div class="field"><label>Название блюда</label><input type="text" id="mealName" placeholder="Например: каша, кофе..." autocomplete="off" maxlength="40"></div>
+  <div class="field"><label>Калории, ккал</label><input type="number" id="mealKcal" inputmode="numeric" placeholder="350"></div>
+  <button class="btn btn-primary" id="mealSaveBtn" disabled>Добавить</button>
+  <button class="btn btn-ghost" id="mealCancelBtn">Отмена</button>
+</div></div>
+
+<!-- Detail -->
+<div class="overlay" id="detailOverlay"><div class="sheet">
+  <div class="detail-top"><div class="detail-chip" id="dChip"></div><div class="info"><h2 id="dName"></h2><span id="dSince"></span></div></div>
+  <div class="bigcount"><div class="num" id="dDays">0</div><div class="lbl">дней без этого</div></div>
+  <p class="next-line" id="dNext"></p>
+  <div class="progress"><i id="dProgress"></i></div>
+  <div class="sub" style="margin-top:18px">
+    <div><div class="v" id="dHours">0</div><div class="k">часов</div></div>
+    <div><div class="v" id="dBest">0</div><div class="k">лучший результат</div></div>
+  </div>
+  <div class="det-section">Достижения</div>
+  <div class="badges" id="dBadges"></div>
+  <button class="btn btn-danger" id="resetBtn">Я сорвался — начать заново</button>
+  <button class="btn btn-ghost" id="deleteBtn">Удалить привычку</button>
+  <button class="btn btn-ghost" id="detailCloseBtn">Закрыть</button>
+</div></div>
+
+<!-- Celebration -->
+<div class="cel-overlay" id="celOverlay"><div class="cel-card">
+  <div class="cel-emoji" id="celEmoji">🎉</div>
+  <h2 id="celTitle">Поздравляем!</h2>
+  <p id="celText"></p>
+  <button class="btn btn-ghost" id="celNotifBtn">🔔 Включить поздравления</button>
+  <button class="btn btn-primary" id="celCloseBtn">Спасибо!</button>
+</div></div>
+
+<script>
+const PALETTE = ["#e5484d","#f76808","#ffb224","#30a46c","#0091ff","#3e63dd","#8e4ec6","#e93d82","#6b7280","#16161a"];
+const MILESTONES = [1,3,7,14,30,60,90,180,365];
+const MS_LABEL = {1:"1 день",3:"3 дня",7:"неделя",14:"2 недели",30:"месяц",60:"2 месяца",90:"3 месяца",180:"полгода",365:"год"};
+const MS_EMOJI = {1:"🌱",3:"✨",7:"🎉",14:"💪",30:"🏆",60:"🌟",90:"🥇",180:"👑",365:"🎆"};
+const QUOTES = [
+  "Каждый день без зависимости — маленькая победа. И она твоя.",
+  "Сила не в том, чтобы никогда не падать, а в том, чтобы подниматься снова.",
+  "Самое трудное — начать. Это уже позади.",
+  "Один день за раз. Сегодня всё получается.",
+  "Зависимость громкая, но ты — громче.",
+  "Каждый трезвый час — повод для гордости.",
+  "Маленькие шаги каждый день приводят к большим переменам.",
+  "Забота о себе — это уже победа.",
+  "Срыв — не конец пути, а часть дороги.",
+  "Твоё будущее «я» скажет спасибо.",
+  "Ты сильнее, чем привычка, которая тянет назад.",
+  "Сегодня — хороший день, чтобы сделать выбор в свою пользу.",
+  "Каждый отказ делает тебя свободнее.",
+  "Дыши. Этот момент ты уже проходишь.",
+  "Прогресс важнее совершенства.",
+  "Ты не обязан быть идеальным — достаточно быть упорным.",
+  "Тяга проходит. Ты остаёшься.",
+  "Свобода начинается с одного «нет».",
+  "Гордись не цифрами, а тем, что не сдаёшься.",
+  "Ты выбираешь себя — каждый день заново.",
+  "Трудно сейчас — легче потом. Так и работает.",
+  "Каждая минута без зависимости — вклад в твоё здоровье.",
+  "Ты уже на правильном пути. Просто продолжай идти.",
+  "Перемены не громкие. Они тихие и ежедневные.",
+  "Слабость — это поддаться. Сила — это попробовать снова.",
+  "Сегодня ты на шаг ближе к себе настоящему.",
+  "Не считай, сколько осталось. Радуйся тому, что прошёл.",
+  "Ты способен на большее, чем думаешь.",
+  "Спокойствие — это тоже сила.",
+  "Верь в свой прогресс, даже когда он незаметен."
+];
+const QUICK = [
+  {n:"Кофе с молоком",k:60},{n:"Чай",k:5},{n:"Банан",k:90},{n:"Яблоко",k:80},
+  {n:"Бутерброд",k:250},{n:"Тарелка супа",k:180},{n:"Шоколадка",k:250},{n:"Кола 0.5",k:210}
+];
+const WATER_GOAL = 8;
+
+let habits = [], meals = [], water = {}, profile = null;
+let selColor = PALETTE[0], currentId = null, currentTab = "habits", calorieGoal = 0;
+let currentQuote = "";
+
+function load(){
+  try { habits = JSON.parse(localStorage.getItem("privychka")||"[]"); } catch(e){ habits=[]; }
+  try { meals = JSON.parse(localStorage.getItem("privychka_meals")||"[]"); } catch(e){ meals=[]; }
+  try { water = JSON.parse(localStorage.getItem("privychka_water")||"{}"); } catch(e){ water={}; }
+  try { profile = JSON.parse(localStorage.getItem("privychka_profile")||"null"); } catch(e){ profile=null; }
+}
+function save(){ try { localStorage.setItem("privychka", JSON.stringify(habits)); } catch(e){} }
+function saveMeals(){ try { localStorage.setItem("privychka_meals", JSON.stringify(meals)); } catch(e){} }
+function saveWater(){ try { localStorage.setItem("privychka_water", JSON.stringify(water)); } catch(e){} }
+function saveProfile(){ try { localStorage.setItem("privychka_profile", JSON.stringify(profile)); } catch(e){} }
+function daysBetween(ts){ return Math.floor((Date.now()-ts)/86400000); }
+function hoursBetween(ts){ return Math.floor((Date.now()-ts)/3600000); }
+function todayKey(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function pickQuote(){ let q; do { q=QUOTES[Math.floor(Math.random()*QUOTES.length)]; } while(QUOTES.length>1 && q===currentQuote); currentQuote=q; const el=document.getElementById("quote"); if(el) el.textContent=q; }
+
+function initTheme(){
+  let t=null; try { t=localStorage.getItem("theme"); } catch(e){}
+  if(!t){ t=window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark":"light"; }
+  setTheme(t);
+}
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  try { localStorage.setItem("theme", t); } catch(e){}
+  document.getElementById("themeBtn").textContent = t==="dark" ? "☀️":"🌙";
+  document.querySelector('meta[name=theme-color]').setAttribute("content", t==="dark"?"#0f0f12":"#f5f5f7");
+}
+document.getElementById("themeBtn").onclick = () => {
+  const cur=document.documentElement.getAttribute("data-theme");
+  setTheme(cur==="dark"?"light":"dark");
+};
+
+function switchTab(tab){
+  currentTab=tab;
+  document.getElementById("screenHabits").classList.toggle("active", tab==="habits");
+  document.getElementById("screenNutrition").classList.toggle("active", tab==="nutrition");
+  document.getElementById("screenProfile").classList.toggle("active", tab==="profile");
+  document.getElementById("tabHabits").classList.toggle("active", tab==="habits");
+  document.getElementById("tabNutrition").classList.toggle("active", tab==="nutrition");
+  document.getElementById("tabProfile").classList.toggle("active", tab==="profile");
+  document.getElementById("title").textContent = tab==="habits" ? "Привычки" : (tab==="nutrition" ? "Питание" : "Профиль");
+  document.getElementById("fab").style.display = tab==="profile" ? "none":"flex";
+  render();
+}
+document.getElementById("tabHabits").onclick=()=>switchTab("habits");
+document.getElementById("tabNutrition").onclick=()=>switchTab("nutrition");
+document.getElementById("tabProfile").onclick=()=>switchTab("profile");
+
+function plural(n, one, few, many){
+  const m10=n%10, m100=n%100;
+  if(m10===1 && m100!==11) return one;
+  if(m10>=2 && m10<=4 && (m100<10||m100>=20)) return few;
+  return many;
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function render(){
+  const streak = habits.length ? Math.max(...habits.map(h=>daysBetween(h.start))) : 0;
+  const totalDays = habits.reduce((s,h)=>s+daysBetween(h.start),0);
+  document.getElementById("stStreak").textContent = streak;
+  document.getElementById("stActive").textContent = habits.length;
+  document.getElementById("stTotal").textContent = totalDays;
+  document.getElementById("stats").classList.toggle("hidden", habits.length===0);
+
+  const grid=document.getElementById("grid"); grid.innerHTML="";
+  habits.forEach(h=>{
+    const d=daysBetween(h.start);
+    const card=document.createElement("div");
+    card.className="card"; card.style.background=h.color;
+    card.innerHTML='<div class="name">'+escapeHtml(h.name)+'</div>'+
+      '<div class="days">'+d+'<small>'+plural(d,"день","дня","дней")+' без</small></div>';
+    card.onclick=()=>openDetail(h.id);
+    grid.appendChild(card);
+  });
+  document.getElementById("empty").classList.toggle("hidden", habits.length>0);
+
+  const tk=todayKey();
+  const today=meals.filter(m=>m.date===tk);
+  const total=today.reduce((s,m)=>s+m.kcal,0);
+  document.getElementById("kcalTotal").textContent=total;
+  if(calorieGoal>0){
+    document.getElementById("kcalGoal").textContent="из "+calorieGoal+" ккал";
+    const pct=Math.min(100, total/calorieGoal*100);
+    const bar=document.getElementById("kcalBar");
+    bar.style.width=pct+"%";
+    bar.style.background= total>calorieGoal ? "#e5484d":"var(--green)";
+    const left=calorieGoal-total;
+    const rem=document.getElementById("kcalRemain");
+    rem.textContent= left>=0 ? ("Осталось "+left+" ккал"):("Превышение на "+(-left)+" ккал");
+    document.getElementById("kcalBarWrap").style.display="block";
+    rem.style.display="block";
+  } else {
+    document.getElementById("kcalGoal").textContent="ккал за сегодня";
+    document.getElementById("kcalBarWrap").style.display="none";
+    document.getElementById("kcalRemain").style.display="none";
+  }
+  const mealsEl=document.getElementById("meals"); mealsEl.innerHTML="";
+  today.slice().reverse().forEach(m=>{
+    const row=document.createElement("div"); row.className="meal";
+    row.innerHTML='<div class="mname">'+escapeHtml(m.name)+'</div>'+
+      '<div class="right"><div class="mkcal">'+m.kcal+' ккал</div><button class="del-x">×</button></div>';
+    row.querySelector(".del-x").onclick=()=>{ meals=meals.filter(x=>x.id!==m.id); saveMeals(); render(); };
+    mealsEl.appendChild(row);
+  });
+  document.getElementById("mealsEmpty").style.display= today.length ? "none":"block";
+
+  const wc=water[tk]||0;
+  document.getElementById("waterCount").textContent=wc;
+  const cups=document.getElementById("cups"); cups.innerHTML="";
+  const shown=Math.max(WATER_GOAL, wc);
+  for(let i=0;i<shown;i++){
+    const c=document.createElement("span");
+    c.className="cup"+(i<wc?" full":""); c.textContent="🥛";
+    cups.appendChild(c);
+  }
+}
+
+function buildChips(){
+  const wrap=document.getElementById("chips"); wrap.innerHTML="";
+  QUICK.forEach(q=>{
+    const c=document.createElement("div"); c.className="chip";
+    c.textContent="+ "+q.n+" · "+q.k;
+    c.onclick=()=>{ meals.push({id:Date.now()+""+Math.random(), name:q.n, kcal:q.k, date:todayKey()}); saveMeals(); render(); };
+    wrap.appendChild(c);
+  });
+}
+
+document.getElementById("quoteCard").onclick=pickQuote;
+document.getElementById("waterPlus").onclick=()=>{ const k=todayKey(); water[k]=(water[k]||0)+1; saveWater(); render(); };
+document.getElementById("waterMinus").onclick=()=>{ const k=todayKey(); water[k]=Math.max(0,(water[k]||0)-1); saveWater(); render(); };
+document.getElementById("fab").onclick=()=>{ currentTab==="habits" ? openAdd() : (currentTab==="nutrition" ? openMeal() : null); };
+
+// ---- Background image ----
+function applyBg(url){
+  document.body.style.backgroundImage = url ? ("url("+url+")") : "";
+  document.body.classList.toggle("has-bg", !!url);
+  const prev=document.getElementById("bgPreview");
+  prev.style.backgroundImage = url ? ("url("+url+")") : "";
+  prev.classList.toggle("empty", !url);
+  document.getElementById("bgRemove").style.display = url ? "block":"none";
+}
+function loadBg(){ let u=null; try{ u=localStorage.getItem("privychka_bg"); }catch(e){} applyBg(u||null); }
+document.getElementById("bgChoose").onclick=()=>document.getElementById("bgInput").click();
+document.getElementById("bgInput").onchange=(e)=>{
+  const f=e.target.files && e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const max=1080; let w=img.width, h=img.height;
+      const sc=Math.min(1, max/Math.max(w,h)); w=Math.round(w*sc); h=Math.round(h*sc);
+      const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+      cv.getContext("2d").drawImage(img,0,0,w,h);
+      let data; try{ data=cv.toDataURL("image/jpeg",0.82); }catch(err){ data=reader.result; }
+      try{ localStorage.setItem("privychka_bg", data); }catch(err){ alert("Изображение слишком большое для сохранения. Попробуй фото поменьше."); return; }
+      applyBg(data);
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(f);
+};
+document.getElementById("bgRemove").onclick=()=>{ try{ localStorage.removeItem("privychka_bg"); }catch(e){} applyBg(null); };
+
+// ---- Ambient music (Web Audio, license-free) ----
+let audioCtx=null, musicNodes=null, musicOn=false;
+function startMusic(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended") audioCtx.resume();
+    const master=audioCtx.createGain(); master.gain.value=0; master.connect(audioCtx.destination);
+    const filter=audioCtx.createBiquadFilter(); filter.type="lowpass"; filter.frequency.value=700; filter.connect(master);
+    const freqs=[130.81,196.00,261.63,329.63,392.00];
+    const oscs=freqs.map((f,i)=>{
+      const o=audioCtx.createOscillator(); o.type="sine"; o.frequency.value=f; o.detune.value=(i-2)*4;
+      const g=audioCtx.createGain(); g.gain.value=(i===0?1.4:1)*0.10/freqs.length;
+      o.connect(g); g.connect(filter); o.start(); return o;
+    });
+    const lfo=audioCtx.createOscillator(); lfo.frequency.value=0.07;
+    const lfoGain=audioCtx.createGain(); lfoGain.gain.value=0.035;
+    lfo.connect(lfoGain); lfoGain.connect(master.gain); lfo.start();
+    master.gain.setTargetAtTime(0.085, audioCtx.currentTime, 2);
+    musicNodes={master,oscs,lfo};
+    musicOn=true;
+  }catch(e){ musicOn=false; }
+}
+function stopMusic(){
+  if(musicNodes && audioCtx){
+    try{
+      const {master,oscs,lfo}=musicNodes;
+      master.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+      setTimeout(()=>{ try{ oscs.forEach(o=>o.stop()); lfo.stop(); }catch(e){} musicNodes=null; }, 1300);
+    }catch(e){ musicNodes=null; }
+  }
+  musicOn=false;
+}
+function updateMusicBtn(){ const b=document.getElementById("musicBtn"); b.textContent= musicOn ? "⏸ Выключить фон":"🎵 Включить спокойный фон"; b.classList.toggle("on", musicOn); }
+document.getElementById("musicBtn").onclick=()=>{ musicOn ? stopMusic() : startMusic(); updateMusicBtn(); };
+
+// ---- Milestones ----
+function maybeCelebrate(){
+  for(const h of habits){
+    const d=daysBetween(h.start);
+    const reached=MILESTONES.filter(m=>d>=m);
+    const cel=h.celebrated||[];
+    const fresh=reached.filter(m=>!cel.includes(m));
+    if(fresh.length){
+      const top=Math.max(...fresh);
+      h.celebrated=reached; save();
+      showCelebration(h, top); notify(h.name, top);
+      break;
+    }
+  }
+}
+function showCelebration(h, days){
+  document.getElementById("celEmoji").textContent=MS_EMOJI[days]||"🎉";
+  document.getElementById("celTitle").textContent= MS_LABEL[days] ? ("Уже "+MS_LABEL[days]+"!"):(days+" дней!");
+  document.getElementById("celText").textContent="Ты держишься без «"+h.name+"». Мы гордимся тобой 💚";
+  const nb=document.getElementById("celNotifBtn");
+  nb.style.display=(typeof Notification!=="undefined" && Notification.permission==="default")?"block":"none";
+  document.getElementById("celOverlay").classList.add("show");
+}
+function notify(name, days){
+  try{ if(typeof Notification!=="undefined" && Notification.permission==="granted"){
+    const label=MS_LABEL[days]||(days+" дн.");
+    new Notification("Привычка", { body:"Уже "+label+" без «"+name+"» — гордимся тобой! 💚" });
+  } }catch(e){}
+}
+
+// ---- Add habit ----
+function buildColors(){
+  const wrap=document.getElementById("colors"); wrap.innerHTML="";
+  PALETTE.forEach((c,i)=>{
+    const s=document.createElement("div"); s.className="swatch"+(i===0?" sel":""); s.style.background=c;
+    s.onclick=()=>{ selColor=c; [...wrap.children].forEach(x=>x.classList.remove("sel")); s.classList.add("sel"); };
+    wrap.appendChild(s);
+  });
+  selColor=PALETTE[0];
+}
+function openAdd(){ buildColors(); document.getElementById("habitName").value=""; document.getElementById("saveBtn").disabled=true; document.getElementById("addOverlay").classList.add("show"); setTimeout(()=>document.getElementById("habitName").focus(),250); }
+function closeAdd(){ document.getElementById("addOverlay").classList.remove("show"); }
+document.getElementById("habitName").oninput=(e)=>{ document.getElementById("saveBtn").disabled=e.target.value.trim()===""; };
+document.getElementById("saveBtn").onclick=()=>{
+  const name=document.getElementById("habitName").value.trim(); if(!name) return;
+  habits.push({ id:Date.now()+"", name, color:selColor, start:Date.now(), best:0, celebrated:[] });
+  save(); closeAdd(); render();
+};
+document.getElementById("cancelBtn").onclick=closeAdd;
+
+// ---- Add meal ----
+function openMeal(){ document.getElementById("mealName").value=""; document.getElementById("mealKcal").value=""; document.getElementById("mealSaveBtn").disabled=true; document.getElementById("mealOverlay").classList.add("show"); setTimeout(()=>document.getElementById("mealName").focus(),250); }
+function closeMeal(){ document.getElementById("mealOverlay").classList.remove("show"); }
+function validateMeal(){ const n=document.getElementById("mealName").value.trim(); const k=parseInt(document.getElementById("mealKcal").value,10); document.getElementById("mealSaveBtn").disabled=!(n!=="" && k>0); }
+document.getElementById("mealName").oninput=validateMeal;
+document.getElementById("mealKcal").oninput=validateMeal;
+document.getElementById("mealSaveBtn").onclick=()=>{
+  const name=document.getElementById("mealName").value.trim(); const kcal=parseInt(document.getElementById("mealKcal").value,10);
+  if(!name||!(kcal>0)) return;
+  meals.push({ id:Date.now()+"", name, kcal, date:todayKey() });
+  saveMeals(); closeMeal(); render();
+};
+document.getElementById("mealCancelBtn").onclick=closeMeal;
+
+// ---- Profile / BMI / norm ----
+let sex="m";
+function setSex(s){ sex=s; document.getElementById("sexM").classList.toggle("on", s==="m"); document.getElementById("sexF").classList.toggle("on", s==="f"); computeProfile(); }
+document.getElementById("sexM").onclick=()=>setSex("m");
+document.getElementById("sexF").onclick=()=>setSex("f");
+function computeProfile(){
+  const age=parseFloat(document.getElementById("pAge").value);
+  const h=parseFloat(document.getElementById("pHeight").value);
+  const w=parseFloat(document.getElementById("pWeight").value);
+  const resEl=document.getElementById("bmiResult"); const hintEl=document.getElementById("bmiHint");
+  if(!(h>0)||!(w>0)){ resEl.style.display="none"; hintEl.style.display="block"; calorieGoal=0; render(); return; }
+  const m=h/100; const bmi=w/(m*m);
+  let cat,color;
+  if(bmi<18.5){ cat="Недостаточный вес"; color="#0091ff"; }
+  else if(bmi<25){ cat="Норма"; color="#30a46c"; }
+  else if(bmi<30){ cat="Избыточный вес"; color="#ffb224"; }
+  else { cat="Ожирение"; color="#e5484d"; }
+  document.getElementById("bmiNum").textContent=bmi.toFixed(1);
+  const catEl=document.getElementById("bmiCat"); catEl.textContent=cat; catEl.style.background=color;
+  if(age>0){
+    const bmr= 10*w + 6.25*h - 5*age + (sex==="m"?5:-161);
+    calorieGoal=Math.round(bmr*1.2);
+    document.getElementById("normLine").innerHTML="Дневная норма: <b>"+calorieGoal+" ккал</b> (поддержание веса)";
+  } else {
+    calorieGoal=0;
+    document.getElementById("normLine").innerHTML="Укажи возраст — посчитаю дневную норму калорий";
+  }
+  resEl.style.display="block"; hintEl.style.display="none";
+  profile={ sex, age:age||null, h, w }; saveProfile();
+  render();
+}
+["pAge","pHeight","pWeight"].forEach(id=>document.getElementById(id).oninput=computeProfile);
+
+// ---- Detail ----
+function openDetail(id){
+  const h=habits.find(x=>x.id===id); if(!h) return;
+  currentId=id;
+  const days=daysBetween(h.start);
+  document.getElementById("dChip").style.background=h.color;
+  document.getElementById("dName").textContent=h.name;
+  document.getElementById("dSince").textContent="с "+new Date(h.start).toLocaleDateString("ru-RU");
+  document.getElementById("dDays").textContent=days;
+  document.getElementById("dHours").textContent=hoursBetween(h.start);
+  document.getElementById("dBest").textContent=Math.max(h.best||0, days);
+  const next=MILESTONES.find(m=>m>days);
+  const prev=[...MILESTONES].reverse().find(m=>m<=days)||0;
+  if(next){
+    document.getElementById("dNext").textContent="До рубежа «"+MS_LABEL[next]+"» осталось "+(next-days)+" "+plural(next-days,"день","дня","дней");
+    document.getElementById("dProgress").style.width=((days-prev)/(next-prev)*100)+"%";
+  } else {
+    document.getElementById("dNext").textContent="Все рубежи взяты — ты легенда! 🎆";
+    document.getElementById("dProgress").style.width="100%";
+  }
+  const badgesEl=document.getElementById("dBadges"); badgesEl.innerHTML="";
+  MILESTONES.forEach(m=>{
+    const b=document.createElement("div"); b.className="badge"+(days>=m?"":" locked");
+    b.textContent=(days>=m?"✓ ":"")+MS_LABEL[m]; badgesEl.appendChild(b);
+  });
+  document.getElementById("detailOverlay").classList.add("show");
+}
+function closeDetail(){ document.getElementById("detailOverlay").classList.remove("show"); }
+document.getElementById("resetBtn").onclick=()=>{
+  const h=habits.find(x=>x.id===currentId); if(!h) return;
+  h.best=Math.max(h.best||0, daysBetween(h.start)); h.start=Date.now(); h.celebrated=[];
+  save(); closeDetail(); render();
+};
+document.getElementById("deleteBtn").onclick=()=>{ habits=habits.filter(x=>x.id!==currentId); save(); closeDetail(); render(); };
+document.getElementById("detailCloseBtn").onclick=closeDetail;
+document.getElementById("celCloseBtn").onclick=()=>document.getElementById("celOverlay").classList.remove("show");
+document.getElementById("celNotifBtn").onclick=()=>{ try{ if(typeof Notification!=="undefined") Notification.requestPermission().then(()=>{ document.getElementById("celNotifBtn").style.display="none"; }); }catch(e){} };
+
+["addOverlay","detailOverlay","mealOverlay"].forEach(id=>{ document.getElementById(id).onclick=(e)=>{ if(e.target.id===id) e.currentTarget.classList.remove("show"); }; });
+
+// ---- Init ----
+load();
+initTheme();
+loadBg();
+buildChips();
+pickQuote();
+if(profile){
+  sex=profile.sex||"m"; setSex(sex);
+  if(profile.age) document.getElementById("pAge").value=profile.age;
+  if(profile.h) document.getElementById("pHeight").value=profile.h;
+  if(profile.w) document.getElementById("pWeight").value=profile.w;
+  computeProfile();
+}
+render();
+maybeCelebrate();
+</script>
+</body>
+</html>
